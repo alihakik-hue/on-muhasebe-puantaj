@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ön Muhasebe & Puantaj V1</title>
+<style>
+:root{--bg:#f4f6f8;--panel:#fff;--ink:#17212b;--muted:#65717e;--line:#dfe5eb;--accent:#174a7e;--good:#16794c;--bad:#b13b3b}
+*{box-sizing:border-box}body{margin:0;font:14px system-ui,-apple-system,Segoe UI,Roboto,Arial;background:var(--bg);color:var(--ink)}
+header{background:#102f4f;color:white;padding:14px 18px;display:flex;align-items:center;justify-content:space-between;gap:12px;position:sticky;top:0;z-index:4}
+header h1{font-size:18px;margin:0}.tabs{display:flex;gap:8px;flex-wrap:wrap}.tabs button,.btn{border:0;border-radius:8px;padding:9px 12px;cursor:pointer}.tabs button{background:#244e77;color:#fff}.tabs button.active{background:#fff;color:#123}
+main{max-width:1450px;margin:auto;padding:16px}.page{display:none}.page.active{display:block}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px;margin:12px 0}
+.card,.box{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:14px;box-shadow:0 1px 3px #0000000c}.card b{font-size:20px;display:block;margin-top:6px}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.box h2{font-size:16px;margin:0 0 12px}
+form{display:grid;grid-template-columns:repeat(4,minmax(120px,1fr));gap:8px}label{font-size:12px;color:var(--muted)}input,select,textarea{width:100%;padding:8px;border:1px solid #ccd5de;border-radius:7px;background:white}textarea{min-height:36px}
+.field{display:flex;flex-direction:column;gap:4px}.wide{grid-column:span 2}.actions{grid-column:1/-1;display:flex;gap:8px}.btn{background:var(--accent);color:#fff}.btn.alt{background:#5b6772}.btn.danger{background:var(--bad)}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12px}th,td{padding:7px;border-bottom:1px solid var(--line);text-align:left}th{background:#f0f3f6;position:sticky;top:0}.scroll{overflow:auto;max-height:380px}
+.filters{display:flex;gap:8px;flex-wrap:wrap;align-items:end}.filters .field{min-width:140px}.muted{color:var(--muted)}.good{color:var(--good)}.bad{color:var(--bad)}
+.puantaj{min-width:1100px}.pselect{padding:4px;min-width:54px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}form{grid-template-columns:repeat(2,1fr)}.wide{grid-column:span 2}header{align-items:flex-start;flex-direction:column}}
+@media print{header,.no-print,form{display:none!important}body{background:white}.box,.card{box-shadow:none}}
+</style><link rel="manifest" href="./manifest.webmanifest"><meta name="theme-color" content="#102f4f"></head>
+<body>
+<header><h1>Ön Muhasebe & İşçi Puantaj — V1</h1><div class="tabs">
+<button class="active" data-page="muh">Ön Muhasebe</button><button data-page="rap">Raporlama</button><button data-page="per">İşçi & Puantaj</button>
+</div></header>
+<main>
+<section id="muh" class="page active">
+<div class="cards" id="cards"></div>
+<div class="grid">
+<div class="box"><h2>Firma / Cari Kartı</h2><form id="firmForm">
+<div class="field"><label>Firma Adı</label><input name="name" required></div><div class="field"><label>Tür</label><select name="type"><option>Müşteri</option><option>Tedarikçi</option><option>Müşteri/Tedarikçi</option></select></div>
+<div class="field"><label>Telefon</label><input name="phone"></div><div class="field"><label>Vergi No</label><input name="tax"></div>
+<div class="actions"><button class="btn">Firma Ekle</button></div></form><div class="scroll"><table><thead><tr><th>Firma</th><th>Tür</th><th>Telefon</th><th></th></tr></thead><tbody id="firmsBody"></tbody></table></div></div>
+<div class="box"><h2>Proje / İş</h2><form id="projectForm"><div class="field wide"><label>Proje / İş Adı</label><input name="name" required></div><div class="field"><label>Firma</label><select name="firm" class="firmSelect"></select></div><div class="field"><label>Durum</label><select name="status"><option>Aktif</option><option>Tamamlandı</option><option>Beklemede</option></select></div><div class="actions"><button class="btn">Proje Ekle</button></div></form>
+<div class="scroll"><table><thead><tr><th>Proje</th><th>Firma</th><th>Durum</th><th></th></tr></thead><tbody id="projectsBody"></tbody></table></div></div>
+</div>
+<div class="box" style="margin-top:12px"><h2>Muhasebe Hareketi</h2><form id="txForm">
+<div class="field"><label>Tarih</label><input type="date" name="date" required></div><div class="field"><label>İşlem</label><select name="type" id="txType"><option>Satış</option><option>Alış</option><option>Tahsilat</option><option>Ödeme</option><option>Gelir</option><option>Gider</option></select></div>
+<div class="field"><label>Firma</label><select name="firm" class="firmSelect"></select></div><div class="field"><label>Proje</label><select name="project" class="projectSelect"></select></div>
+<div class="field"><label>Gider Kategorisi</label><select name="category" id="category"></select></div><div class="field"><label>Ödeme Şekli</label><select name="method"><option>Kasa</option><option>Banka</option><option>Kredi Kartı</option><option>Çek/Senet</option><option>Vadeli</option></select></div>
+<div class="field"><label>Tutar</label><input type="number" step=".01" min="0" name="amount" required></div><div class="field"><label>Para Birimi</label><select name="currency"><option>TRY</option><option>USD</option><option>EUR</option></select></div>
+<div class="field"><label>KDV %</label><input type="number" step=".01" name="vat" value="20"></div><div class="field"><label>Belge/Fatura No</label><input name="doc"></div><div class="field wide"><label>Açıklama</label><input name="desc"></div>
+<div class="actions"><button class="btn">Hareket Kaydet</button></div></form>
+<div class="scroll"><table><thead><tr><th>Tarih</th><th>İşlem</th><th>Firma</th><th>Proje</th><th>Kategori</th><th>Tutar</th><th>Açıklama</th><th></th></tr></thead><tbody id="txBody"></tbody></table></div></div>
+<div class="box" style="margin-top:12px"><h2>Kasa / Banka Açılış Bakiyesi</h2>
+<form id="balanceForm"><div class="field"><label>Kasa Açılış Bakiyesi (TRY)</label><input id="cashOpening" type="number" step=".01" value="0"></div>
+<div class="field"><label>Banka Açılış Bakiyesi (TRY)</label><input id="bankOpening" type="number" step=".01" value="0"></div>
+<div class="actions"><button type="button" class="btn" onclick="saveBalances()">Bakiyeleri Kaydet</button></div></form>
+<p class="muted">Kasa kalan = açılış kasa + kasadan tahsilat/gelir − kasadan ödeme/gider. Banka da aynı mantıkla hesaplanır.</p></div>
+<div class="box no-print" style="margin-top:12px"><h2>Veri Yedekleme</h2><button class="btn" onclick="backup()">Yedek İndir</button> <label class="btn alt">Yedek Yükle<input type="file" accept=".json" onchange="restore(this)" hidden></label></div>
+</section>
+
+<section id="rap" class="page"><div class="box"><h2>Genel / Firma / Proje Raporu</h2><div class="filters no-print">
+<div class="field"><label>Dönem</label><select id="period"><option value="week">Bu Hafta</option><option value="month" selected>Bu Ay</option><option value="year">Bu Yıl</option><option value="custom">Özel Tarih</option></select></div>
+<div class="field"><label>Başlangıç</label><input type="date" id="rStart"></div><div class="field"><label>Bitiş</label><input type="date" id="rEnd"></div>
+<div class="field"><label>Firma</label><select id="rFirm" class="firmSelect"></select></div><div class="field"><label>Proje</label><select id="rProject" class="projectSelect"></select></div>
+<div class="field"><label>İşlem</label><select id="rType"><option value="">Tümü</option><option>Satış</option><option>Alış</option><option>Tahsilat</option><option>Ödeme</option><option>Gelir</option><option>Gider</option></select></div>
+<button class="btn" onclick="renderReport()">Raporla</button><button class="btn alt" onclick="print()">Yazdır / PDF</button></div>
+<div class="cards" id="reportCards"></div><div class="grid"><div><h2>Gider Dağılımı</h2><div id="expenseSummary"></div></div><div><h2>Rapor Hareketleri</h2><div class="scroll"><table><thead><tr><th>Tarih</th><th>Tür</th><th>Firma</th><th>Proje</th><th>Kategori</th><th>Tutar</th></tr></thead><tbody id="reportBody"></tbody></table></div></div></div></div></section>
+
+<section id="per" class="page">
+<div class="grid"><div class="box"><h2>Personel Kartı</h2><form id="personForm"><div class="field wide"><label>Ad Soyad</label><input name="name" required></div><div class="field"><label>Görev</label><input name="role"></div><div class="field"><label>Ücret Tipi</label><select name="payType"><option>Günlük</option><option>Aylık</option></select></div><div class="field"><label>Ücret</label><input name="pay" type="number" step=".01" required></div><div class="field"><label>Mesai Saat Ücreti</label><input name="overtime" type="number" step=".01" value="0"></div><div class="field"><label>Proje</label><select name="project" class="projectSelect"></select></div><div class="actions"><button class="btn">Personel Ekle</button></div></form>
+<div class="scroll"><table><thead><tr><th>Personel</th><th>Görev</th><th>Ücret</th><th>Proje</th><th></th></tr></thead><tbody id="personBody"></tbody></table></div></div>
+<div class="box"><h2>Avans / Kesinti / Mesai</h2><form id="personTxForm"><div class="field"><label>Tarih</label><input name="date" type="date" required></div><div class="field"><label>Personel</label><select name="person" id="personSelect"></select></div><div class="field"><label>Tür</label><select name="type"><option>Avans</option><option>Kesinti</option><option>Mesai</option></select></div><div class="field"><label>Tutar / Mesai Saati</label><input name="value" type="number" step=".01" required></div><div class="actions"><button class="btn">Kaydet</button></div></form><div id="personTxSummary"></div></div></div>
+<div class="box" style="margin-top:12px"><h2>Aylık Puantaj</h2><div class="filters no-print"><div class="field"><label>Ay</label><input type="month" id="attendanceMonth"></div><button class="btn" onclick="renderAttendance()">Puantajı Aç</button><button class="btn alt" onclick="print()">Yazdır / PDF</button></div>
+<p class="muted">T=Tam, Y=Yarım, G=Gelmedi, İ=İzin, R=Rapor, HT=Hafta Tatili, RT=Resmî Tatil. Mesai ayrıca üstteki bölümden saat olarak girilebilir.</p><div class="scroll" style="max-height:600px"><table class="puantaj" id="attendanceTable"></table></div></div>
+<div class="box" style="margin-top:12px"><h2>Aylık Puantaj Raporu</h2>
+<div class="cards" id="attendanceReportCards"></div>
+<div class="grid"><div><h2>Günlük Çalışan / Yevmiye Özeti</h2><div class="scroll"><table><thead><tr><th>Gün</th><th>Tam Gün</th><th>Yarım Gün</th><th>Toplam Yevmiye</th><th>Günlük İşçilik</th></tr></thead><tbody id="dailyAttendanceBody"></tbody></table></div></div>
+<div><h2>Personel Aylık Özeti</h2><div class="scroll"><table><thead><tr><th>Personel</th><th>Tam</th><th>Yarım</th><th>Yevmiye</th><th>Yevmiye Tutarı</th><th>Mesai</th><th>Toplam</th></tr></thead><tbody id="personAttendanceBody"></tbody></table></div></div></div>
+</div>
+</section>
+</main>
+<script>
+const KEY='onmuhasebe_v1';
+const cats=['Yemek','Sarf Malzeme','Demirbaş','Yakıt','Nakliye','Kira','Elektrik','Su','Telefon/İnternet','Araç','Bakım-Onarım','İşçilik','Vergi/Harç','Ofis','Konaklama','Diğer'];
+let db=JSON.parse(localStorage.getItem(KEY)||'null')||{firms:[],projects:[],tx:[],persons:[],personTx:[],attendance:{}};
+db.balances=db.balances||{cash:0,bank:0};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)], uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,7);
+function save(){localStorage.setItem(KEY,JSON.stringify(db));renderAll()}
+function money(n,c='TRY'){return new Intl.NumberFormat('tr-TR',{style:'currency',currency:c}).format(+n||0)}
+function options(arr,all='Seçiniz'){return `<option value="">${all}</option>`+arr.map(x=>`<option value="${x.id}">${x.name}</option>`).join('')}
+function nameOf(arr,id){return (arr.find(x=>x.id===id)||{}).name||''}
+function del(kind,id){if(confirm('Kayıt silinsin mi?')){db[kind]=db[kind].filter(x=>x.id!==id);save()}}
+function formObj(f){return Object.fromEntries(new FormData(f).entries())}
+$$('.tabs button').forEach(b=>b.onclick=()=>{$$('.tabs button').forEach(x=>x.classList.remove('active'));b.classList.add('active');$$('.page').forEach(x=>x.classList.remove('active'));$('#'+b.dataset.page).classList.add('active'); if(b.dataset.page==='rap')renderReport(); if(b.dataset.page==='per')renderAttendance()});
+$('#category').innerHTML='<option value="">—</option>'+cats.map(x=>`<option>${x}</option>`).join('');
+function addHandler(id,kind,extra=()=>({})){ $(id).onsubmit=e=>{e.preventDefault();let o=formObj(e.target);o.id=uid();Object.assign(o,extra(o));db[kind].push(o);e.target.reset();setDefaults();save()}}
+addHandler('#firmForm','firms'); addHandler('#projectForm','projects'); addHandler('#txForm','tx',o=>({amount:+o.amount,vat:+o.vat||0})); addHandler('#personForm','persons',o=>({pay:+o.pay,overtime:+o.overtime||0})); addHandler('#personTxForm','personTx',o=>({value:+o.value}));
+function setDefaults(){let d=new Date().toISOString().slice(0,10);$$('input[type=date]').forEach(x=>{if(!x.value)x.value=d});if(!$('#attendanceMonth').value)$('#attendanceMonth').value=d.slice(0,7)}
+function saveBalances(){db.balances.cash=+$('#cashOpening').value||0;db.balances.bank=+$('#bankOpening').value||0;save()}
+function renderAll(){
+ $$('.firmSelect').forEach(s=>{let v=s.value;s.innerHTML=options(db.firms,s.id==='rFirm'?'Tüm Firmalar':'—');s.value=v});
+ $$('.projectSelect').forEach(s=>{let v=s.value;s.innerHTML=options(db.projects,s.id==='rProject'?'Tüm Projeler':'—');s.value=v});
+ $('#personSelect').innerHTML=options(db.persons,'Personel');
+ $('#firmsBody').innerHTML=db.firms.map(x=>`<tr><td>${x.name}</td><td>${x.type}</td><td>${x.phone||''}</td><td><button onclick="del('firms','${x.id}')">Sil</button></td></tr>`).join('');
+ $('#projectsBody').innerHTML=db.projects.map(x=>`<tr><td>${x.name}</td><td>${nameOf(db.firms,x.firm)}</td><td>${x.status}</td><td><button onclick="del('projects','${x.id}')">Sil</button></td></tr>`).join('');
+ $('#txBody').innerHTML=[...db.tx].reverse().map(x=>`<tr><td>${x.date}</td><td>${x.type}</td><td>${nameOf(db.firms,x.firm)}</td><td>${nameOf(db.projects,x.project)}</td><td>${x.category||''}</td><td>${money(x.amount,x.currency)}</td><td>${x.desc||''}</td><td><button onclick="del('tx','${x.id}')">Sil</button></td></tr>`).join('');
+ $('#personBody').innerHTML=db.persons.map(x=>`<tr><td>${x.name}</td><td>${x.role||''}</td><td>${money(x.pay)} / ${x.payType}</td><td>${nameOf(db.projects,x.project)}</td><td><button onclick="del('persons','${x.id}')">Sil</button></td></tr>`).join('');
+ let sums={Satış:0,Alış:0,Tahsilat:0,Ödeme:0,Gelir:0,Gider:0};db.tx.filter(x=>x.currency==='TRY').forEach(x=>sums[x.type]=(sums[x.type]||0)+x.amount);
+ let net=sums.Tahsilat+sums.Gelir-sums.Ödeme-sums.Gider;
+ let cash=db.balances.cash||0, bank=db.balances.bank||0;
+ db.tx.filter(x=>x.currency==='TRY').forEach(x=>{let delta=(x.type==='Tahsilat'||x.type==='Gelir')?x.amount:(x.type==='Ödeme'||x.type==='Gider')?-x.amount:0;if(x.method==='Kasa')cash+=delta;if(x.method==='Banka')bank+=delta});
+ $('#cards').innerHTML=[['KASA KALAN',cash],['BANKA KALAN',bank],['TOPLAM NAKİT',cash+bank],['Satış',sums.Satış],['Alış',sums.Alış],['Tahsilat',sums.Tahsilat],['Ödeme',sums.Ödeme],['Gelir',sums.Gelir],['Gider',sums.Gider],['Net Nakit Hareketi',net]].map(([a,b])=>`<div class="card"><span>${a} (TRY)</span><b>${money(b)}</b></div>`).join('');
+ if($('#cashOpening'))$('#cashOpening').value=db.balances.cash||0;if($('#bankOpening'))$('#bankOpening').value=db.balances.bank||0;
+ renderPersonTx();
+ // Personel, ücret, mesai veya diğer personel verileri değiştiğinde açık puantaj raporunu anında güncelle.
+ if($('#attendanceMonth')&&$('#attendanceMonth').value){
+   let m=$('#attendanceMonth').value,[y,mo]=m.split('-').map(Number),days=new Date(y,mo,0).getDate();
+   renderAttendanceReport(m,y,mo,days);
+ }
+}
+function range(){
+ let p=$('#period').value, now=new Date(), s,e=new Date(now);
+ if(p==='custom')return [$('#rStart').value,$('#rEnd').value];
+ if(p==='week'){let day=(now.getDay()+6)%7;s=new Date(now);s.setDate(now.getDate()-day)}
+ if(p==='month')s=new Date(now.getFullYear(),now.getMonth(),1);
+ if(p==='year')s=new Date(now.getFullYear(),0,1);
+ return [s.toISOString().slice(0,10),e.toISOString().slice(0,10)]
+}
+function renderReport(){
+ let [s,e]=range(), f=$('#rFirm').value,p=$('#rProject').value,t=$('#rType').value;
+ let rows=db.tx.filter(x=>(!s||x.date>=s)&&(!e||x.date<=e)&&(!f||x.firm===f)&&(!p||x.project===p)&&(!t||x.type===t));
+ let sums={Satış:0,Alış:0,Tahsilat:0,Ödeme:0,Gelir:0,Gider:0};rows.filter(x=>x.currency==='TRY').forEach(x=>sums[x.type]=(sums[x.type]||0)+x.amount);
+ let cash=db.balances.cash||0, bank=db.balances.bank||0;
+ db.tx.filter(x=>x.currency==='TRY'&&(!e||x.date<=e)).forEach(x=>{let delta=(x.type==='Tahsilat'||x.type==='Gelir')?x.amount:(x.type==='Ödeme'||x.type==='Gider')?-x.amount:0;if(x.method==='Kasa')cash+=delta;if(x.method==='Banka')bank+=delta});
+ let remaining=cash+bank;
+ $('#reportCards').innerHTML=
+   `<div class="card"><span>KASA KALAN</span><b>${money(cash)}</b></div>`+
+   `<div class="card"><span>BANKA KALAN</span><b>${money(bank)}</b></div>`+
+   `<div class="card"><span>TOPLAM KALAN PARA</span><b>${money(remaining)}</b></div>`+
+   Object.entries(sums).map(([a,b])=>`<div class="card"><span>${a}</span><b>${money(b)}</b></div>`).join('');
+ let ex={};rows.filter(x=>x.type==='Gider'&&x.currency==='TRY').forEach(x=>ex[x.category||'Diğer']=(ex[x.category||'Diğer']||0)+x.amount);
+ $('#expenseSummary').innerHTML=Object.entries(ex).sort((a,b)=>b[1]-a[1]).map(([a,b])=>`<p><b>${a}</b>: ${money(b)}</p>`).join('')||'<p class="muted">Gider kaydı yok.</p>';
+ $('#reportBody').innerHTML=rows.map(x=>`<tr><td>${x.date}</td><td>${x.type}</td><td>${nameOf(db.firms,x.firm)}</td><td>${nameOf(db.projects,x.project)}</td><td>${x.category||''}</td><td>${money(x.amount,x.currency)}</td></tr>`).join('');
+}
+$('#period').onchange=()=>{let custom=$('#period').value==='custom';$('#rStart').disabled=$('#rEnd').disabled=!custom;renderReport()};['rFirm','rProject','rType','rStart','rEnd'].forEach(id=>$('#'+id).onchange=renderReport);
+function renderPersonTx(){let a={};db.personTx.forEach(x=>{a[x.person]=a[x.person]||{Avans:0,Kesinti:0,Mesai:0};a[x.person][x.type]+=x.value});$('#personTxSummary').innerHTML=Object.entries(a).map(([id,v])=>`<p><b>${nameOf(db.persons,id)}</b> — Avans: ${money(v.Avans)} | Kesinti: ${money(v.Kesinti)} | Mesai: ${v.Mesai} saat</p>`).join('')}
+function renderAttendance(){
+ let m=$('#attendanceMonth').value;if(!m)return;let [y,mo]=m.split('-').map(Number),days=new Date(y,mo,0).getDate();
+ let head='<tr><th>Personel</th>'+Array.from({length:days},(_,i)=>`<th>${i+1}</th>`).join('')+'<th>T</th><th>Y</th><th>G</th><th>İ</th></tr>';
+ let body=db.persons.map(p=>{let counts={T:0,Y:0,G:0,'İ':0};let cells='';for(let d=1;d<=days;d++){let k=`${m}-${String(d).padStart(2,'0')}`,v=db.attendance[p.id]?.[k]||'';if(counts[v]!=null)counts[v]++;cells+=`<td><select class="pselect" onchange="att('${p.id}','${k}',this.value)"><option></option>${['T','Y','G','İ','R','HT','RT'].map(z=>`<option ${v===z?'selected':''}>${z}</option>`).join('')}</select></td>`}return `<tr><th>${p.name}</th>${cells}<td>${counts.T}</td><td>${counts.Y}</td><td>${counts.G}</td><td>${counts['İ']}</td></tr>`}).join('');
+ $('#attendanceTable').innerHTML=head+body;
+ renderAttendanceReport(m,y,mo,days);
+}
+function dailyRate(p){
+ let pay=+p.pay||0;
+ return p.payType==='Aylık'?pay/30:pay;
+}
+function renderAttendanceReport(m,y,mo,days){
+ let totalFull=0,totalHalf=0,totalUnits=0,totalLabor=0;
+ let dailyRows=[];
+ for(let d=1;d<=days;d++){
+   let k=`${m}-${String(d).padStart(2,'0')}`, full=0,half=0,cost=0;
+   db.persons.forEach(p=>{
+     let v=db.attendance[p.id]?.[k]||'';
+     if(v==='T'){full++;cost+=dailyRate(p)}
+     else if(v==='Y'){half++;cost+=dailyRate(p)*.5}
+   });
+   let units=full+half*.5;
+   totalFull+=full;totalHalf+=half;totalUnits+=units;totalLabor+=cost;
+   dailyRows.push(`<tr><td>${d}.${String(mo).padStart(2,'0')}.${y}</td><td>${full} kişi</td><td>${half} kişi</td><td>${units.toLocaleString('tr-TR')} yevmiye</td><td>${money(cost)}</td></tr>`);
+ }
+ $('#dailyAttendanceBody').innerHTML=dailyRows.join('');
+ let overtimeTotal=0,personRows=[];
+ db.persons.forEach(p=>{
+   let full=0,half=0;
+   for(let d=1;d<=days;d++){
+     let k=`${m}-${String(d).padStart(2,'0')}`,v=db.attendance[p.id]?.[k]||'';
+     if(v==='T')full++; else if(v==='Y')half++;
+   }
+   let units=full+half*.5, base=units*dailyRate(p);
+   let ot=db.personTx.filter(x=>x.person===p.id&&x.type==='Mesai'&&x.date?.slice(0,7)===m).reduce((a,x)=>a+(+x.value||0),0);
+   let otCost=ot*(+p.overtime||0); overtimeTotal+=otCost;
+   personRows.push(`<tr><td>${p.name}</td><td>${full}</td><td>${half}</td><td>${units.toLocaleString('tr-TR')}</td><td>${money(base)}</td><td>${ot.toLocaleString('tr-TR')} sa / ${money(otCost)}</td><td>${money(base+otCost)}</td></tr>`);
+ });
+ $('#personAttendanceBody').innerHTML=personRows.join('');
+ let avg=totalUnits?totalLabor/totalUnits:0, grand=totalLabor+overtimeTotal;
+ $('#attendanceReportCards').innerHTML=
+ `<div class="card"><span>AYLIK TOPLAM YEVMİYE</span><b>${totalUnits.toLocaleString('tr-TR')}</b></div>`+
+ `<div class="card"><span>TAM GÜN KİŞİ-YEVMİYE</span><b>${totalFull}</b></div>`+
+ `<div class="card"><span>YARIM GÜN</span><b>${totalHalf}</b></div>`+
+ `<div class="card"><span>ORT. YEVMİYE</span><b>${money(avg)}</b></div>`+
+ `<div class="card"><span>YEVMİYE TOPLAMI</span><b>${money(totalLabor)}</b></div>`+
+ `<div class="card"><span>MESAİ TOPLAMI</span><b>${money(overtimeTotal)}</b></div>`+
+ `<div class="card"><span>TOPLAM İŞÇİLİK</span><b>${money(grand)}</b></div>`;
+}
+function att(pid,date,val){
+ db.attendance[pid]=db.attendance[pid]||{};
+ if(val)db.attendance[pid][date]=val;else delete db.attendance[pid][date];
+ localStorage.setItem(KEY,JSON.stringify(db));
+ // Sayfa değiştirmeden günlük ve aylık puantaj raporunu anında yenile.
+ let m=$('#attendanceMonth').value;
+ if(m){
+   let [y,mo]=m.split('-').map(Number),days=new Date(y,mo,0).getDate();
+   renderAttendanceReport(m,y,mo,days);
+ }
+}
+function backup(){let b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='on-muhasebe-yedek-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(a.href)}
+function restore(inp){let r=new FileReader();r.onload=()=>{try{db=JSON.parse(r.result);save();alert('Yedek yüklendi.')}catch(e){alert('Geçersiz yedek dosyası.')}};if(inp.files[0])r.readAsText(inp.files[0])}
+setDefaults();renderAll();$('#period').dispatchEvent(new Event('change'));
+</script><script>
+if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js'))}
+</script></body></html>

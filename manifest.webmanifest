@@ -1,0 +1,11 @@
+{
+  "name": "Ön Muhasebe & İşçi Puantaj",
+  "short_name": "Muhasebe",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f4f6f8",
+  "theme_color": "#102f4f",
+  "lang": "tr",
+  "icons": []
+}

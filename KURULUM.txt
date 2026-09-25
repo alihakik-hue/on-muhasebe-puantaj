@@ -1,0 +1,14 @@
+ÖN MUHASEBE & İŞÇİ PUANTAJ — AYRI UYGULAMA
+
+Bu uygulama Mühendislik Programları V3'ten tamamen ayrıdır. V3'e dokunulmaz.
+
+Önerilen yeni GitHub repository adı: on-muhasebe-puantaj
+
+1. GitHub'da YENİ repository oluşturun.
+2. Bu klasörün İÇİNDEKİ index.html, manifest.webmanifest, sw.js dosyalarını köke yükleyin.
+3. Settings > Pages > Deploy from a branch > main > /(root).
+4. Yayınlanan adresi internet açıkken bir kez açın.
+5. Windows/Mac'te uygulama olarak kurabilir; iPhone/iPad'de Safari > Paylaş > Ana Ekrana Ekle yapabilirsiniz.
+6. Sonra çevrimdışı kullanabilirsiniz.
+
+ÖNEMLİ: Muhasebe verileri cihaz/tarayıcı localStorage alanında tutulur. Programdaki Yedek İndir özelliğini düzenli kullanın.
